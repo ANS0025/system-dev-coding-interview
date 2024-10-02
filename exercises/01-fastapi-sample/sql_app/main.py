@@ -51,6 +51,31 @@ def read_user(user_id: int, db: Session = db_session, x_api_token: str = Depends
     return db_user
 
 
+@app.delete("/users/{user_id}", response_model=schemas.User)
+def delete_user(user_id: int, db: Session = db_session, x_api_token: str = Depends(verify_token)):
+    # Check if the user exists and is active
+    user = crud.get_user(db, user_id=user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="User is already inactive")
+
+    # Get the oldest active user ID
+    lowest_active_user_id = crud.get_oldest_active_user_id(db)
+    if lowest_active_user_id is None or lowest_active_user_id == user_id:
+        raise HTTPException(status_code=400, detail="No active user available to transfer items")
+
+    # Transfer items to the oldest active user
+    crud.transfer_items(db, from_user_id=user_id, to_user_id=lowest_active_user_id)
+
+    # Delete the user (soft delete)
+    deleted_user = crud.delete_user(db, user_id=user_id)
+    if deleted_user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return deleted_user
+
+
 @app.post("/users/{user_id}/items/", response_model=schemas.Item)
 def create_item_for_user(
     user_id: int, item: schemas.ItemCreate, db: Session = db_session, x_api_token: str = Depends(verify_token)
