@@ -62,3 +62,15 @@ def create_item_for_user(
 def read_items(skip: int = 0, limit: int = 100, db: Session = db_session, x_api_token: str = Depends(verify_token)):
     items = crud.get_items(db, skip=skip, limit=limit)
     return items
+
+
+@app.get("/me/items", response_model=List[schemas.Item])
+def read_own_items(db: Session = db_session, x_api_token: str = Depends(verify_token)):
+    user_email = x_api_token.get("sub")
+    if not user_email:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    user = crud.get_user_by_email(db, email=user_email)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    items = crud.get_items_by_user(db, user_id=user.id)
+    return items
