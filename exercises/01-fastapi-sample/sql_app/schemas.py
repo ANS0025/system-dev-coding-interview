@@ -35,3 +35,6 @@ class User(UserBase):
 
     class Config:
         orm_mode = True
+
+class UserWithToken(User):
+    x_api_token: str
