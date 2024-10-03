@@ -131,6 +131,7 @@ def test_deleted_user_has_no_items(test_db, client):
 def test_items_transferred_to_oldest_active_user(test_db, client):
     # Create three users
     user1 = create_test_user(client, "user1@example.com", "password1")
+    user2 = create_test_user(client, "user2@example.com", "password2")
     user3 = create_test_user(client, "user3@example.com", "password3")
 
     # Create an item for user3
@@ -149,3 +150,20 @@ def test_items_transferred_to_oldest_active_user(test_db, client):
     user1_items = response.json()
     assert len(user1_items) == 1
     assert user1_items[0]["title"] == "User3 Item"
+
+    # Create a new item for user1
+    client.post(
+        f"/users/{user1['id']}/items/",
+        headers={"X-API-TOKEN": user1["x_api_token"]},
+        json={"title": "User1 Item", "description": "Another Test Item"}
+    )
+
+    # Delete user1
+    client.delete(f"/users/{user1['id']}", headers={"X-API-TOKEN": user1["x_api_token"]})
+
+    # Check that user2 now has both items
+    response = client.get("/me/items", headers={"X-API-TOKEN": user2["x_api_token"]})
+    assert response.status_code == 200
+    user2_items = response.json()
+    assert len(user2_items) == 2
+    assert {item["title"] for item in user2_items} == {"User3 Item", "User1 Item"}

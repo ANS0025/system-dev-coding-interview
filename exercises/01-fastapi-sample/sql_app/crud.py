@@ -44,13 +44,20 @@ def create_user_item(db: Session, item: schemas.ItemCreate, user_id: int):
 def delete_user(db: Session, user_id: int):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if user:
+        oldest_active_user = get_oldest_active_user(db, exclude_user_id=user_id)
+        if oldest_active_user:
+            transfer_items(db, from_user_id=user_id, to_user_id=oldest_active_user.id)
+        
         user.is_active = False
         db.commit()
         return user
     return None
 
-def get_oldest_active_user(db: Session):
-    return db.query(models.User).filter(models.User.is_active == True).order_by(models.User.id.asc()).first()
+def get_oldest_active_user(db: Session, exclude_user_id: int = None):
+    query = db.query(models.User).filter(models.User.is_active == True)
+    if exclude_user_id is not None:
+        query = query.filter(models.User.id != exclude_user_id)
+    return query.order_by(models.User.id.asc()).first()
 
 def transfer_items(db: Session, from_user_id: int, to_user_id: int):
     db.query(models.Item).filter(models.Item.owner_id == from_user_id).update({"owner_id": to_user_id})
