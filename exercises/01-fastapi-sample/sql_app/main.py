@@ -68,14 +68,15 @@ def delete_user(user_id: int, current_user: schemas.User = Depends(get_current_u
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
     if not db_user.is_active:
-        raise HTTPException(status_code=400, detail="User is already inactive")
+        raise HTTPException(status_code=401, detail="User is already inactive")
     
     oldest_active_user = crud.get_oldest_active_user(db)
-    if oldest_active_user is None or oldest_active_user.id == user_id:
-        raise HTTPException(status_code=400, detail="No active user available to transfer items")
+    if oldest_active_user is not None and oldest_active_user.id != user_id:
+        crud.transfer_items(db, from_user_id=user_id, to_user_id=oldest_active_user.id)
     
-    crud.transfer_items(db, from_user_id=user_id, to_user_id=oldest_active_user.id)
     deleted_user = crud.delete_user(db, user_id=user_id)
+    if deleted_user is None:
+        raise HTTPException(status_code=400, detail="Failed to delete user")
     return deleted_user
 
 
