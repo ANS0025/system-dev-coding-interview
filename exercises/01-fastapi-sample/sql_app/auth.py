@@ -1,5 +1,5 @@
 from jose import JWTError, jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException
 from fastapi.security import APIKeyHeader
 
 SECRET_KEY = "fef77a0471d86522406bee9b3a4a86dca76de14c941c8725e9759dad8e64c9db"
