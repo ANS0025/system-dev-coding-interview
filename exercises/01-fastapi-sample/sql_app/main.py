@@ -22,6 +22,7 @@ def get_db():
 
 db_session = Depends(get_db)
 
+
 def get_current_user(token_data: dict = Depends(verify_token), db: Session = db_session):
     email = token_data.get("sub")
     user = crud.get_user_by_email(db, email=email)
