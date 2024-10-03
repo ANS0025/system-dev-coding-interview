@@ -50,7 +50,7 @@ def delete_user(db: Session, user_id: int):
     return None
 
 def get_oldest_active_user(db: Session):
-    return db.query(models.User).filter(models.User.is_active == True).order_by(models.User.id).first()
+    return db.query(models.User).filter(models.User.is_active == True).order_by(models.User.id.asc()).first()
 
 def transfer_items(db: Session, from_user_id: int, to_user_id: int):
     db.query(models.Item).filter(models.Item.owner_id == from_user_id).update({"owner_id": to_user_id})
