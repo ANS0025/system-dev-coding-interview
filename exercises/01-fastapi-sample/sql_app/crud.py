@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from . import models, schemas
 
@@ -38,3 +39,19 @@ def create_user_item(db: Session, item: schemas.ItemCreate, user_id: int):
     db.commit()
     db.refresh(db_item)
     return db_item
+
+
+def delete_user(db: Session, user_id: int):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if user:
+        user.is_active = False
+        db.commit()
+        return user
+    return None
+
+def get_oldest_active_user(db: Session):
+    return db.query(models.User).filter(models.User.is_active == True).order_by(models.User.id.asc()).first()
+
+def transfer_items(db: Session, from_user_id: int, to_user_id: int):
+    db.query(models.Item).filter(models.Item.owner_id == from_user_id).update({"owner_id": to_user_id})
+    db.commit()
